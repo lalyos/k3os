@@ -12,6 +12,7 @@ import (
 	"github.com/rancher/mapper/convert"
 	merge2 "github.com/rancher/mapper/convert/merge"
 	"github.com/rancher/mapper/values"
+	"github.com/sirupsen/logrus"
 )
 
 const (
@@ -40,6 +41,15 @@ var (
 		readUserData,
 	}
 )
+
+func init() {
+	fmt.Println("====> Fake MAIN =====")
+	logrus.SetLevel(logrus.DebugLevel)
+	fmt.Printf("schema: %#v", schema)
+	mapper.YAMLEncoder(os.Stdout, schema)
+
+	//spew.Dump(schema)
+}
 
 func ToEnv(cfg CloudConfig) ([]string, error) {
 	data, err := convert.EncodeToMap(&cfg)
@@ -76,6 +86,8 @@ func readersToObject(readers ...reader) (CloudConfig, error) {
 	}
 
 	data, err := merge(readers...)
+	y, _ := yaml.Marshal(data)
+	logrus.Debugf("HACKED MERGED!!! err:%#v data:\n===\n%s\n===\n", err, y)
 	if err != nil {
 		return result, err
 	}
@@ -83,28 +95,36 @@ func readersToObject(readers ...reader) (CloudConfig, error) {
 	return result, convert.ToObj(data, &result)
 }
 
-type reader func() (map[string]interface{}, error)
+type reader func() (string, map[string]interface{}, error)
 
 func merge(readers ...reader) (map[string]interface{}, error) {
 	data := map[string]interface{}{}
 	for _, r := range readers {
-		newData, err := r()
+		readername, newData, err := r()
+		logrus.Debugf("HACK merge() next reader: %#v err:%v", readername, err)
+		logrus.Debugf("HACK merge() newData: %#v", newData)
 		if err != nil {
 			return nil, err
 		}
+
 		if err := schema.Mapper.ToInternal(newData); err != nil {
 			return nil, err
 		}
+		logrus.Debug("HACK merge2.UpdateMerge start ...")
 		data = merge2.UpdateMerge(schema, schemas, data, newData, false)
+		logrus.Debugf("HACK merge2.UpdateMerge END MERGED_DATA: %#v", data)
+		//y, _ := yaml.Marshal(data)
+		//logrus.Debugf("HACK merge() MERGED: \n====\n%s\n====", y)
+
 	}
 	return data, nil
 }
 
-func readSystemConfig() (map[string]interface{}, error) {
+func readSystemConfig() (string, map[string]interface{}, error) {
 	return readFile(SystemConfig)
 }
 
-func readLocalConfig() (map[string]interface{}, error) {
+func readLocalConfig() (string, map[string]interface{}, error) {
 	return readFile(LocalConfig)
 }
 
@@ -116,15 +136,15 @@ func readLocalConfigs() []reader {
 		return nil
 	} else if err != nil {
 		return []reader{
-			func() (map[string]interface{}, error) {
-				return nil, err
+			func() (string, map[string]interface{}, error) {
+				return "readLocalConfigs", nil, err
 			},
 		}
 	}
 
 	for _, f := range files {
 		p := filepath.Join(localConfigs, f.Name())
-		result = append(result, func() (map[string]interface{}, error) {
+		result = append(result, func() (string, map[string]interface{}, error) {
 			return readFile(p)
 		})
 	}
@@ -132,28 +152,28 @@ func readLocalConfigs() []reader {
 	return result
 }
 
-func readFile(path string) (map[string]interface{}, error) {
+func readFile(path string) (string, map[string]interface{}, error) {
 	f, err := ioutil.ReadFile(path)
 	if os.IsNotExist(err) {
-		return nil, nil
+		return path, nil, nil
 	} else if err != nil {
-		return nil, err
+		return path, nil, err
 	}
 
 	data := map[string]interface{}{}
 	if err := yaml.Unmarshal(f, &data); err != nil {
-		return nil, err
+		return path, nil, err
 	}
 
-	return data, nil
+	return path, data, nil
 }
 
-func readCmdline() (map[string]interface{}, error) {
+func readCmdline() (string, map[string]interface{}, error) {
 	bytes, err := ioutil.ReadFile("/proc/cmdline")
 	if os.IsNotExist(err) {
-		return nil, nil
+		return "readCmdline", nil, nil
 	} else if err != nil {
-		return nil, err
+		return "readCmdline", nil, err
 	}
 
 	data := map[string]interface{}{}
@@ -177,5 +197,5 @@ func readCmdline() (map[string]interface{}, error) {
 		}
 	}
 
-	return data, nil
+	return "readCmdline", data, nil
 }

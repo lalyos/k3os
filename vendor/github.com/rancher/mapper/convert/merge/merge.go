@@ -3,6 +3,8 @@ package merge
 import (
 	"strings"
 
+	"github.com/sirupsen/logrus"
+
 	types "github.com/rancher/mapper"
 	"github.com/rancher/mapper/convert"
 	"github.com/rancher/mapper/definition"
@@ -127,7 +129,9 @@ func isMap(field string, schema *types.Schema, schemas *types.Schemas) bool {
 
 func mergeMaps(fieldType string, parentSchema, schema *types.Schema, schemas *types.Schemas, replace bool, dest map[string]interface{}, src map[string]interface{}) map[string]interface{} {
 	result := copyMapReplace(schema, dest, replace)
+	logrus.Debugf("[mergeMaps] parentSchema:%v schema:%v", parentSchema, schema)
 	for k, v := range src {
+		logrus.Debugf("[mergeMap]    key:%-10s val:%s", k, v)
 		result[k] = merge(k, fieldType, parentSchema, schema, schemas, replace, dest[k], v)
 	}
 	return result

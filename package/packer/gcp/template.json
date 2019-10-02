@@ -1,14 +1,15 @@
 {
     "variables": {
-        "zone": "europe-west3-c",
-        "project_id": "container-solutions-workshops",
-        "k3os_version": "v0.2.0",
-        "iso_url": "https://github.com/rancher/k3os/releases/download/v0.2.0/k3os-amd64.iso"
+        "zone": "",
+        "project_id": "",
+        "k3os_version": "v0.3.0",
+        "iso_url": "https://github.com/rancher/k3os/releases/download/{{user `k3os_version`}}/k3os-amd64.iso"
       },
     "builders": [
       {
-        "image_name": "k3os-{{user `k3os_version`}}",
+        "image_name": "k3os-v030-new",
         "type": "googlecompute",
+        "account_file": "account.json",
         "project_id": "{{user `project_id`}}",
         "source_image_family": "ubuntu-1804-lts",
         "ssh_username": "packer",
@@ -39,7 +40,8 @@
             "inline":[
                 "set -x; sudo systemd-run --on-active=3 --timer-property=AccuracySec=100ms sudo systemctl reboot --force --force; sync; echo Rebooting"
             ],
-            "pause_after":"3m"
+            "pause_after":"3m",
+            "expect_disconnect": true
         }
     ]
   }

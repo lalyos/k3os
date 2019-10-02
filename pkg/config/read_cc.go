@@ -3,12 +3,15 @@ package config
 import (
 	"bytes"
 	"encoding/base64"
+	"fmt"
 	"io/ioutil"
 	"os"
 	"strings"
 
 	"github.com/ghodss/yaml"
 	"github.com/rancher/mapper/convert"
+	"github.com/sirupsen/logrus"
+	"github.com/davecgh/go-spew/spew"
 )
 
 const (
@@ -17,7 +20,8 @@ const (
 	userdata = "/run/config/userdata"
 )
 
-func readCloudConfig() (map[string]interface{}, error) {
+func readCloudConfig() (string, map[string]interface{}, error) {
+	logrus.Debug("HACK readCloudConfig ")
 	var keys []string
 	result := map[string]interface{}{}
 
@@ -29,7 +33,7 @@ func readCloudConfig() (map[string]interface{}, error) {
 	keyData, err := ioutil.ReadFile(ssh)
 	if err != nil {
 		// ignore error
-		return result, nil
+		return "readCloudConfig", result, nil
 	}
 
 	for _, line := range strings.Split(string(keyData), "\n") {
@@ -43,17 +47,18 @@ func readCloudConfig() (map[string]interface{}, error) {
 		result["ssh_authorized_keys"] = keys
 	}
 
-	return result, nil
+	return "readCloudConfig", result, nil
 }
 
-func readUserData() (map[string]interface{}, error) {
+func readUserData() (string, map[string]interface{}, error) {
+	logrus.Debug("HACK UserData")
 	result := map[string]interface{}{}
 
 	data, err := ioutil.ReadFile(userdata)
 	if os.IsNotExist(err) {
-		return nil, nil
+		return "readUserData", nil, nil
 	} else if err != nil {
-		return nil, err
+		return "readUserData", nil, err
 	}
 
 	cc := CloudConfig{}
@@ -82,7 +87,12 @@ func readUserData() (map[string]interface{}, error) {
 		cc.WriteFiles[0].Path = "/run/k3os/userdata"
 		cc.Runcmd = []string{"/run/k3os/userdata"}
 
-		return convert.EncodeToMap(cc)
+		m, err := convert.EncodeToMap(cc)
+		return "readUserData", m, err
 	}
-	return result, yaml.Unmarshal(data, &result)
+
+	yaml.Unmarshal(data, &result)
+	logrus.Debug("HACK ", fmt.Sprintf("data: %#v", result))
+
+	return "readUserData",z result, yaml.Unmarshal(data, &result)
 }

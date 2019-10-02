@@ -33,27 +33,33 @@ func ApplyHostname(cfg *config.CloudConfig) error {
 }
 
 func ApplyPassword(cfg *config.CloudConfig) error {
+	logrus.Debug("HACK ApplyPassword()")
 	return command.SetPassword(cfg.K3OS.Password)
 }
 
 func ApplyRuncmd(cfg *config.CloudConfig) error {
+	logrus.Debug("HACK ApplyRuncmd()", cfg.Runcmd)
 	return command.ExecuteCommand(cfg.Runcmd)
 }
 
 func ApplyBootcmd(cfg *config.CloudConfig) error {
+	logrus.Debug("HACK ApplyBootcmd()", cfg.Bootcmd)
 	return command.ExecuteCommand(cfg.Bootcmd)
 }
 
 func ApplyInitcmd(cfg *config.CloudConfig) error {
+	logrus.Debug("HACK ApplyInitcmd()", cfg.Initcmd)
 	return command.ExecuteCommand(cfg.Initcmd)
 }
 
 func ApplyWriteFiles(cfg *config.CloudConfig) error {
+	logrus.Debug("HACK ApplyWriteFiles()")
 	writefile.WriteFiles(cfg)
 	return nil
 }
 
 func ApplySSHKeys(cfg *config.CloudConfig) error {
+	logrus.Debug("HACK ApplySSHKeys()")
 	return ssh.SetAuthorizedKeys(cfg, false)
 }
 
@@ -62,18 +68,22 @@ func ApplySSHKeysWithNet(cfg *config.CloudConfig) error {
 }
 
 func ApplyK3SWithRestart(cfg *config.CloudConfig) error {
+	logrus.Debug("HACK ()")
 	return ApplyK3S(cfg, true, false)
 }
 
 func ApplyK3SInstall(cfg *config.CloudConfig) error {
+	logrus.Debug("HACK ()")
 	return ApplyK3S(cfg, true, true)
 }
 
 func ApplyK3SNoRestart(cfg *config.CloudConfig) error {
+	logrus.Debug("HACK ApplyK3SNoRestart()")
 	return ApplyK3S(cfg, false, false)
 }
 
 func ApplyK3S(cfg *config.CloudConfig, restart, install bool) error {
+	logrus.Debug("HACK ApplyK3S()")
 	mode, err := mode.Get()
 	if err != nil {
 		return err
@@ -92,6 +102,7 @@ func ApplyK3S(cfg *config.CloudConfig, restart, install bool) error {
 	}
 
 	args := cfg.K3OS.K3sArgs
+	logrus.Debug("HACK k3s_args: ", args)
 	vars := []string{
 		"INSTALL_K3S_NAME=service",
 	}
@@ -156,6 +167,7 @@ func ApplyK3S(cfg *config.CloudConfig, restart, install bool) error {
 }
 
 func ApplyInstall(cfg *config.CloudConfig) error {
+	logrus.Debug("HACK ApplyInstall()")
 	mode, err := mode.Get()
 	if err != nil {
 		return err
@@ -234,6 +246,7 @@ func ApplyWifi(cfg *config.CloudConfig) error {
 }
 
 func ApplyDataSource(cfg *config.CloudConfig) error {
+	logrus.Debug("HACK ApplyDataSource()")
 	if len(cfg.K3OS.DataSources) == 0 {
 		return nil
 	}
